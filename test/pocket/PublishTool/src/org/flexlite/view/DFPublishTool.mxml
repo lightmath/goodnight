@@ -1,0 +1,247 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:TitleWindow xmlns:fx="http://ns.adobe.com/mxml/2009"  close="titlewindow2_closeHandler(event)"
+		 xmlns:s="library://ns.adobe.com/flex/spark" 
+		 xmlns:mx="library://ns.adobe.com/flex/mx" 
+		 width="590" height="398" textAlign="center" title="编译程序">
+
+	<fx:Declarations>
+		<!-- 将非可视元素（例如服务、值对象）放在此处 -->
+	</fx:Declarations>
+	
+	<fx:Script source="ReleaseProjectAs.as"/>
+	<fx:Script source="MixSwf.as"/>
+	<fx:Script>
+		<![CDATA[
+			import mx.controls.Alert;
+			import mx.events.CloseEvent;
+			import mx.managers.PopUpManager;
+			
+			import org.flexlite.domUtils.FileUtil;
+			import org.flexlite.events.PublishEvent;
+			import org.flexlite.publish.ProToSwf;
+			
+			/**
+			 *	程序的版本号
+			 */
+			public var version:String;
+			public var publishUrl:String;
+			private var dfRootUrl:String;
+			private var toolRootUrl:String;
+			private var sdkPath:String;
+			private var configPath:String;
+			private var languageArr:Array = ["cn","tw"];
+			private var wordStr:String = "";
+			private var libPathArr:Array;
+			/**
+			* 1-->嵌入字体	2-->编译程序
+			*/
+			private var state:uint;
+			
+			public function embedFont():void
+			{
+				version = versionText.text;
+				dfRootUrl = dfRootUrlText.text;
+				sdkPath = sdkUrlText.text;
+				toolRootUrl = File.applicationDirectory.nativePath;
+				libPathArr = dfLibUrlText.text.split(";");
+				publishUrl = publishUrlText.text;
+				if(dfRootUrl==null || toolRootUrl==null || sdkPath==null || libPathArr==null) return;
+				
+				var toolRootUrls:Array = toolRootUrl.split("\\");
+				toolRootUrls.pop();
+				toolRootUrl = toolRootUrls.join("\\");
+				configPath = toolRootUrl+"\\src\\config\\";
+				
+				state = 1;
+				loadTxtFile();
+			}
+			
+			private function loadTxtFile():void
+			{
+				var txtFiles:Array = [(dfRootUrl+"\\Source\\Lang\\cn\\EmbedWords.txt"),(dfRootUrl+"\\Source\\Lang\\tw\\EmbedWords.txt")];
+				for each(var url:String in txtFiles)
+				{
+					var content:String = FileUtil.openAsString(url);
+					wordStr += content;
+				}
+				var fontLibrary:ProToSwf = new ProToSwf();
+				var fontLibraryUrl:String = toolRootUrl+"\\src\\config\\font\\FontLibrary.as";
+				for each(var lang:String in languageArr)
+				{
+					fontLibrary.startDealFontLibrary(fontLibraryUrl, wordStr, lang);
+				}
+				
+				//改变编译批处理命令.
+				updateEmbedBatFile();
+				//编译字体库.
+				compileProject();
+			}
+			
+			private function updateEmbedBatFile():void
+			{
+				var content:String = "@echo off\n"+sdkPath.charAt(0)+":\n"+"cd "+ sdkPath;
+				var sFontLibClsPath:String;
+				var fontLibStr:String;
+				for each(var lang:String in languageArr)
+				{
+					sFontLibClsPath = configPath+"font\\"+lang+"\\FontLibrary.as";
+					fontLibStr = "\nmxmlc -load-config="+ configPath +"project-config.xml " + sFontLibClsPath
+						+" -output "+dfRootUrl+"\\Source\\Lang\\"+lang+"\\Swf\\Style\\FontLib.swf";
+					content += fontLibStr;
+				}
+				FileUtil.save(configPath + "config.bat", content);
+			}
+			
+			private var np:NativeProcess;
+			private function compileProject():void
+			{
+				if (Capabilities.os.toLowerCase().indexOf("win") > -1)
+				{
+					if(NativeProcess.isSupported)
+					{
+						np = new NativeProcess();
+						var info:NativeProcessStartupInfo = new NativeProcessStartupInfo();
+						var file:File = new File("C:\\Windows\\System32\\cmd.exe");
+						info.executable = file;
+						np.addEventListener(ProgressEvent.STANDARD_OUTPUT_DATA,outComplete);
+						np.addEventListener(ProgressEvent.STANDARD_INPUT_PROGRESS, inputProgressListener);
+						np.addEventListener(NativeProcessExitEvent.EXIT, done);
+						np.addEventListener(Event.STANDARD_ERROR_CLOSE, error);
+						
+						try{
+							np.start(info);
+						}catch(e:Error){
+							Alert.show("pass:"+e.message);
+						}
+						np.standardInput.writeUTFBytes(configPath + "config.bat"+"\n");
+					}
+					else
+					{
+						trace("-app.xml文件可能没有配置正确");
+					}
+				}
+			}
+			
+			public function inputProgressListener(event:ProgressEvent):void
+			{
+//				trace(event.bytesLoaded +"/"+event.bytesTotal);
+			}
+			private function done(event:NativeProcessExitEvent):void
+			{
+				trace("done");
+			}
+			private function error(event:Event):void
+			{
+				trace('error');
+			}
+			
+			//编译反馈消息.
+			private function outComplete(e:ProgressEvent):void
+			{
+				var message:String = (np.standardOutput.readMultiByte(np.standardOutput.bytesAvailable,"GBK")).toString();
+				var sFilePath:String = sdkPath.substring(0, sdkPath.length)+">";
+				if(message.indexOf(sFilePath)>-1)
+				{
+					np.removeEventListener(ProgressEvent.STANDARD_OUTPUT_DATA,outComplete);
+					np.removeEventListener(ProgressEvent.STANDARD_INPUT_PROGRESS, inputProgressListener);
+					np.removeEventListener(NativeProcessExitEvent.EXIT, done);
+					np.removeEventListener(Event.STANDARD_ERROR_CLOSE, error);
+					
+					var publishEvent:PublishEvent;
+					if(state==1)
+					{
+						trace("嵌入字体 success");
+						updateInitXML();
+						publishEvent = new PublishEvent(PublishEvent.EMBED_FONT_COMPLETE);
+						dispatchEvent(publishEvent);
+					}
+					else if(state==2)
+					{
+						trace("编译程序 success");
+						publishEvent = new PublishEvent(PublishEvent.COMPILE_COMPLETE);
+						dispatchEvent(publishEvent);
+					}
+				}
+			}
+			
+			/**
+			 * 编译程序
+			 */	
+			public function compileDF():void
+			{
+				state = 2;
+				updateSourceUrlAs();
+				updateInitXML();
+				updateAppIniAs();
+				createHtml();
+				updateProjectConfig();
+				//改变编译批处理命令.
+				updateComplationFile();
+				//编译程序
+				compileProject();
+			}
+			
+			private function updateComplationFile():void
+			{
+				var content:String = "@echo off\n" + sdkPath.charAt(0)+":\n"+
+					"cd "+ sdkPath;
+				var urlArray:Array = [];
+				var fdreamStr:String = "\nmxmlc -load-config="+ configPath +"project-config.xml -swf-version=18 " 
+					+dfRootUrl+"\\src\\FDream.as"+"  -output "+ publishUrl+"\\FDream"+version+".swf";
+				urlArray.push(fdreamStr);
+				var entryStr:String = "\ncopy "+ dfRootUrl +"\\doc\\Entry.swf "+publishUrl+"\\Entry.swf";
+				urlArray.push(entryStr);
+				entryStr = "\ncopy "+ dfRootUrl +"\\doc\\EntryTw.swf "+publishUrl+"\\EntryTw.swf";
+				urlArray.push(entryStr);
+				var soundStr:String = "\ncopy "+dfRootUrl+"\\src\\config\\sound_ini.xml "+publishUrl+"\\config\\sound_ini"+version+".xml";
+				urlArray.push(soundStr);
+			
+				for(var i:int=0;i<urlArray.length;i++)
+				{
+					content += urlArray[i];
+				}
+				FileUtil.save(configPath + "config.bat", content);
+			}
+			
+			public function titlewindow2_closeHandler(event:CloseEvent):void
+			{
+				PopUpManager.removePopUp(this);
+			}
+			
+		]]>
+	</fx:Script>
+	
+	
+	<s:Label x="13" y="12" fontFamily="Arial" fontWeight="bold" text="版本号"/>
+	<s:TextInput id="versionText" x="110" y="5" width="102" color="#FA020E" text="201309031550"/>
+	<s:TextInput id="publishUrlText" x="110" y="136" width="413" color="#0516FB"
+				 text="E:\DFSVN\releaseVersion\201308291655" textAlign="left"/>
+	<s:Label x="10" y="41" width="52" height="18" text="项目地址"/>
+	<s:TextInput id="dfRootUrlText" x="110" y="32" width="377" text="E:\workspace\DF" textAlign="left"/>
+	<s:Label x="9" y="68" text="SDK的bin地址"/>
+	<s:TextInput id="sdkUrlText" x="110" y="63" width="377"
+				 text="D:\Program Files (x86)\Adobe Flash Builder 4.6\sdks\4.6.0\bin"
+				 textAlign="left"/>
+	<s:Label x="6" y="96" width="93" height="30" text="项目需要导入的库文件绝对地址"/>
+	<s:TextArea id="dfLibUrlText" x="110" y="92" width="415" height="37"
+				skinClass="spark.skins.spark.TextAreaSkin"
+				text="E:\workspace\Box2D\bin\Box2D.swc;E:\workspace\FlexLite\bin\FlexLite.swc;E:\workspace\DF\src\config\gip.swc"
+				textAlign="left" verticalAlign="top"/>
+	<s:Label x="9" y="139" text="项目发布后的地址"/>
+	
+	<s:TextInput id="keyWordPath" x="110" y="264" width="384" text="E:\workspace\DF\doc\keywords.amf"
+				 textAlign="left"/>
+	<s:Label x="12" y="269" text="关键字映射表："/>
+	<s:Button x="521" y="268" width="48" label="浏览" click="button7_clickHandler(event)"/>
+	<s:TextInput id="protocolPath" y="170" left="110" right="93" text="E:\DFSVN\tool"
+				 textAlign="left"/>
+	<s:Label x="10" y="174" text="协议配置路径："/>
+	<s:Button x="523" y="172" width="48" label="浏览" click="button5_clickHandler(event)"/>
+	<s:TextInput id="excludeSwf" x="110" y="201" width="384" height="55"
+				 skinClass="spark.skins.spark.TextAreaSkin"
+				 text="E:\workspace\DF\src\config\gip.swc;E:\workspace\DF\doc\Entry.swf;E:\workspace\DF\doc\EntryTw.swf;E:\workspace\DF\doc\playerglobal.swf;E:\workspace\FlexLite\bin\FlexLite.swc"
+				 textAlign="left"/>
+	<s:Label x="12" y="208" width="82" height="30" text="排除的SWF或SWC：" textAlign="left"/>
+	<s:Button x="523" y="212" width="48" label="浏览" click="button4_clickHandler(event)"/>
+	
+</s:TitleWindow>

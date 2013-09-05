@@ -1,0 +1,166 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<title>ICE DOG GAME TEST</title>
+<style>
+*{
+	padding:0;
+	margin:0;
+}
+body{
+	font-size:12px;
+	font-family: \5FAE\8F6F\96C5\9ED1,\9ED1\4F53,Arail;
+	font-weight:normal;
+	background:#e3d8d8;
+	text-align:18px;
+	background:#e3d8d8 url(images/head.jpg) no-repeat top center;
+}
+.head{
+	height:310px;
+}
+.content{
+	width:1000px;
+	margin:0 auto;
+}
+.foot{
+	color:#FFFFFF;
+	font-size:14px;
+	padding-top: 15px;
+	background:#000000 no-repeat top center;
+	text-align:center;
+}
+
+.foot a{color:#FFF;text-decoration:none} <!--超链接原本颜色-->
+.n{text-decoration:none}
+.foot a:hover{color:#3399CC;text-decoration:underline} <!--鼠标覆在上面的颜色-->
+</style>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<script type="text/javascript" src="swfobject.js"></script>
+<script type="text/javascript" src="gameConf.js"></script>
+<script type="text/javascript">
+			var url=window.location.href;//获取完整URL
+			var tmp= new Array();//临时变量，保存分割字符串
+			tmp=url.split("/");//按照"/"分割
+			var pp=tmp[tmp.length-1];//获取最后一部分，即文件名和参数
+			tmp=pp.split("?");//把参数和文件名分割开 
+			pp=tmp[tmp.length-1];//accountId=math&activecode=123
+			tmp=pp.split("&");
+			
+			var accountId;
+			var activecode;
+			var serverIP;
+			var serverPort;
+			var lifetime=0;
+			var now= new Date();
+			var nativeTime = now.getTime();
+			var mainWebSite = "http://www.icedoggames.com";
+			var L=tmp.length;
+			for(var i=0;i<L;i++)
+			{
+				var item=tmp[i];
+				if(item.indexOf("accountId")>=0)
+				{
+					accountId = item.split("=")[1];
+				}
+				else if(item.indexOf("activecode")>=0)
+				{
+					activecode = item.split("=")[1];
+				}
+				else if(item.indexOf("serverIP")>=0)
+				{
+					serverIP = item.split("=")[1];
+				}
+				else if(item.indexOf("serverPort")>=0)
+				{
+					serverPort = item.split("=")[1];
+				}
+				else if(item.indexOf("lifetime")>=0)
+				{
+					lifetime = item.split("=")[1]*1000;
+				}
+			}
+			
+			if(accountId==null || accountId=="")
+			{
+				alert("账户不存在");
+			}
+			else if(activecode==null || activecode=="")
+			{
+				alert("账户存在异常，校验码不正确");
+			}
+
+			else
+			{
+				var flashvars = {};
+				flashvars.FlashVersion = "v";
+				flashvars.language = "cn";
+				flashvars.accountId = accountId;
+				flashvars.activecode = activecode;
+				flashvars.serverIP = serverIP;
+				flashvars.serverPort = serverPort;
+				flashvars.mainWebSite = mainWebSite;
+				flashvars.platform = "";
+				flashvars.platformObj = "";
+
+				var params = {};
+				params.loop = false;
+				params.salign = "top";
+				params.quality = "high";
+				params.wmode = "direct";
+				params.allowfullscreen = "true";
+				params.allowscriptaccess = "always";
+				params.allownetworking = "all";
+				var attributes = {};
+				swfobject.embedSWF("Entry.swf", "flashcontent", "1000", "600", "11.1.0", "expressInstall.swf", flashvars, params, attributes);
+			}
+
+		function delayedHandle()
+		{
+			var ua=navigator.userAgent.toLowerCase(); 
+			var index = ua.indexOf("chrome");
+			if(index>0)
+			{
+				var version = ua.substring(index+7,index+9);
+				if(version!=24&&version!=21)
+				{//目前测试出来Chrome内核的浏览器，21和24版本是正常的。除此之外暂时一律跳过。
+					return;
+				}
+			}
+			disabledMouseWheel();
+		}
+		
+		function disabledMouseWheel() 
+		{   
+			var flash = document.getElementById("gameArea");
+			if (flash.addEventListener) 
+			{    
+				flash.addEventListener('DOMMouseScroll', scrollFunc, false);   
+			}//W3C   
+			flash.onmousewheel = flash.onmousewheel = scrollFunc;//IE/Opera/Chrome 
+		} 
+		function scrollFunc(evt) 
+		{   
+			evt = evt || window.event;     
+			if(evt.preventDefault) 
+			{     // Firefox       
+				evt.preventDefault();       
+				evt.stopPropagation();     
+			} 
+			else 
+			{       // IE       
+				evt.cancelBubble=true;       
+				evt.returnValue = false;   
+			}   
+			return false; 
+		} 
+			
+		</script>
+</head>
+<body onLoad="delayedHandle()">
+	<div class="page">
+		<div class="head"></div>
+		<div class="content" id="gameArea"><div id="flashcontent" align="center" style="height:600px"></div></div>
+		<div class="foot">上海冰格网络科技有限公司<br><a class="n" href="http://www.miitbeian.gov.cn/" target=_blank>沪ICP备13003506号</a></div>
+	</div>
+</body>
+</html>

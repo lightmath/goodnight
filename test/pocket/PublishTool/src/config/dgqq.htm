@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8" />
+<title>Fighting</title>
+<style>
+html{color:#FFF;background:#000}body,div,dl,dt,dd,ul,ol,li,h1,h2,h3,h4,h5,h6,pre,code,form,fieldset,legend,input,textarea,p,blockquote,th,td{margin:0;padding:0}table{border-collapse:collapse;border-spacing:0}fieldset,img{border:0}address,caption,cite,code,dfn,em,strong,th,var{font-style:normal;font-weight:normal}ol,ul{list-style:none}caption,th{text-align:left}h1,h2,h3,h4,h5,h6{font-size:100%;font-weight:normal}q:before,q:after{content:''}abbr,acronym{border:0;font-variant:normal}sup{vertical-align:text-top}sub{vertical-align:text-bottom}input,textarea,select{font-family:inherit;font-size:inherit;font-weight:inherit}input,textarea,select{*font-size:100%}legend{color:#000}
+html,body{ height: 100%; }
+body{ min-width:1000px; min-height: 630px; position: relative; margin:0; }
+aside{ width:94px; height: 100%; position: relative; z-index: 1; float: left; margin: 0 -100px -32767px 0; background: url(fighting.png) repeat-y -120px 0; }
+aside h1{ height: 120px; text-indent: -100%; background: url(fighting.png) no-repeat; }
+aside ul li{ display:block; padding-bottom: 5px; vertical-align: middle; }
+aside ul a{ height:30px; display: block; text-indent: -100%; background: url(fighting.png) no-repeat; }
+aside li.nav0 a{ background-position: -270px -36px; }
+aside li.nav1 a{ background-position: -373px -36px; }
+aside li.nav2 a{ background-position: -475px -36px; }
+aside li.nav3 a{ background-position: -578px -36px; }
+aside li.nav4 a{ background-position: -681px -36px; }
+aside li.nav5 a{ background-position: -272px -70px; }
+aside li.nav0 a:hover{ background-position: -270px 0; }
+aside li.nav1 a:hover{ background-position: -373px 0; }
+aside li.nav2 a:hover{ background-position: -475px 0; }
+aside li.nav3 a:hover{ background-position: -578px 0; }
+aside li.nav4 a:hover{ background-position: -681px 0; }
+aside li.nav5 a:hover{ background-position: -372px -70px; }
+aside figure{ width:9px; height: 62px; position: absolute; top:50%; right: -9px; margin:0; }
+aside figure i{ width:100%; height:100%; display: block; position: absolute; top:-50%; background: url(fighting.png) no-repeat -230px 0; cursor:pointer; }
+aside figure i.off{ background-position: -251px 0; }
+.warp{ width:100%; height: 100%; overflow: hidden; position: relative; margin: 0 auto; }
+.warp .sub{ width:1000px; height:630px; position: absolute; top:50%; left:50%; }
+.warp .sub .main{ width:100%; height:100%; position: absolute; top:-50%; left:-50%; text-align: center; }
+#p0{ margin-top: 15px; font-size: 14px; }
+</style>
+<!-[if lt ie 9]><script src="html5.js"></script><![endif]->
+</head>
+<body>
+<aside>
+    <nav>
+        <h1>极限格斗</h1>
+        <ul>
+            <li class="nav0"><a href="javascript:;" onclick="qq_invite()">邀请好友</a></li>
+            <li class="nav1"><a href="http://t.qq.com/quandoushi2014" target="_blank">收听微博</a></li>
+            <li class="nav2"><a href="http://bbs.open.qq.com/group-339-1.html" target="_blank">玩家论坛</a></li>
+            <li class="nav3"><a href="http://100679763.kf.ieodopen.qq.com" target="_blank">游戏客服</a></li>
+            <li class="nav4"><a href="http://wp.qq.com/wpa/qunwpa?idkey=22f85c6a8502bed4517219712e28f0307b228acf9dc787ba5926b4c24f0c360e" target="_blank">加官方群</a></li>
+            <li class="nav5"><a href="http://pay.qq.com/qzone/index.shtml?aid=game100679763.op" target="_blank">黄钻特权</a></li>
+        </ul>
+    </nav>
+    <figure><i></i></figure>
+</aside>
+<div class="warp">
+    <div class="sub">
+        <div class="main" id="gameArea">
+            <p id="flashcontent"></p>
+            <p id="p0">《极限格斗》应用由“冰格网络”提供，如有疑问请联系客服QQ : <font color="#FFFF00">746581269</font></p>
+        </div>
+    </div>
+</div>
+<script src="jquery1.10.0.js"></script>
+<script src="swfobject.js"></script>
+<script src="gameConf.js"></script>
+<script>
+    (function (side) {
+        side.find('figure').on('click', function () {
+            side.animate({left:side.offset().left === 0 ? -side.width() + 1 : 0}, 'slow', function () {
+                side.find('figure i').toggleClass('off');
+            });
+        });
+        if ($(window).width() <= 1024) {
+            side.find('figure').click();
+        }
+    }($('aside')));
+
+    var url = window.location.href;//获取完整URL
+    var tmp = new Array();//临时变量，保存分割字符串
+    tmp = url.split("/");//按照"/"分割
+    var pp = tmp[tmp.length - 1];//获取最后一部分，即文件名和参数
+    tmp = pp.split("?");//把参数和文件名分割开
+    pp = tmp[tmp.length - 1];//accountId=math&activecode=123
+    tmp = pp.split("&");
+
+    var accountId;
+    var activecode;
+    var openid;
+    var openkey;
+    var pfkey;
+    var zoneid;
+    var serverIP;
+    var serverPort;
+    var pf = "qzone";
+    var mainWebSite = "";
+    var L = tmp.length;
+    for (var i = 0; i < L; i++) {
+        var item = tmp[i];
+        if (item.indexOf("accountId") >= 0) {
+            accountId = item.split("=")[1];
+        }
+        else if (item.indexOf("activecode") >= 0) {
+            activecode = item.split("=")[1];
+        }
+        else if (item.indexOf("openid") >= 0) {
+            openid = item.split("=")[1];
+        }
+        else if (item.indexOf("openkey") >= 0) {
+            openkey = item.split("=")[1];
+        }
+        else if (item.indexOf("pfkey") >= 0) {
+            pfkey = item.split("=")[1];
+        }
+        else if (item.indexOf("zoneid") >= 0) {
+            zoneid = item.split("=")[1];
+        }
+        else if (item.indexOf("pf") >= 0) {
+            pf = item.split("=")[1];
+        }
+        else if (item.indexOf("serverIP") >= 0) {
+            serverIP = item.split("=")[1];
+        }
+        else if (item.indexOf("serverPort") >= 0) {
+            serverPort = item.split("=")[1];
+        }
+    }
+
+    var iHead = document.getElementsByTagName('HEAD').item(0);
+    var iScript = document.createElement("script");
+    iScript.type = "text/javascript";
+    iScript.src = "http://fusion.qq.com/fusion_loader?appid=100679763&platform=" + pf;
+    iHead.appendChild(iScript);
+
+    if (accountId == null || accountId == "") {
+        alert("账户不存在");
+    }
+    else if (activecode == null || activecode == "") {
+        alert("账户存在异常，校验码不正确");
+    }
+
+    else {
+        var flashvars = {};
+		flashvars.FlashVersion = "v";
+        flashvars.language = "cn";
+        flashvars.accountId = accountId;
+        flashvars.activecode = activecode;
+        flashvars.serverIP = serverIP;
+        flashvars.serverPort = serverPort;
+        flashvars.mainWebSite = mainWebSite;
+        flashvars.platformObj = "openid=" + openid + ",openkey=" + openkey + ",pf=" + pf + ",pfkey=" + pfkey + ",zoneid=" + zoneid;
+        flashvars.platform = "qq";
+
+        var params = {};
+        params.loop = false;
+        params.salign = "top";
+        params.quality = "high";
+        params.wmode = "direct";
+        params.allowfullscreen = "true";
+        params.allowscriptaccess = "always";
+        params.allownetworking = "all";
+        var attributes = {};
+        swfobject.embedSWF("Entry.swf", "flashcontent", "1000", "600", "10.0.0", "expressInstall.swf", flashvars, params, attributes);
+    }
+
+    function replaceMsg() {
+        var oldNode = document.getElementById("p0");
+        oldNode.innerHTML = '玩家游戏ID : ' + openid + '《极限格斗》应用由“冰格网络”提供，如有疑问请联系客服QQ : <font color="#FFFF00">746581269</font>';
+    }
+
+    function delayedHandle() {
+        replaceMsg();
+        var ua = navigator.userAgent.toLowerCase();
+        var index = ua.indexOf("chrome");
+        if (index > 0) {
+            var version = ua.substring(index + 7, index + 9);
+            if (version != 24 && version != 21) {//目前测试出来Chrome内核的浏览器，21和24版本是正常的。除此之外暂时一律跳过。
+                return;
+            }
+        }
+        disabledMouseWheel();
+    }
+
+    function disabledMouseWheel() {
+        var flash = document.getElementById("gameArea");
+        if (flash.addEventListener) {
+            flash.addEventListener('DOMMouseScroll', scrollFunc, false);
+        }//W3C
+        flash.onmousewheel = flash.onmousewheel = scrollFunc;//IE/Opera/Chrome
+    }
+    function scrollFunc(evt) {
+        evt = evt || window.event;
+        if (evt.preventDefault) {     // Firefox
+            evt.preventDefault();
+            evt.stopPropagation();
+        }
+        else {       // IE
+            evt.cancelBubble = true;
+            evt.returnValue = false;
+        }
+        return false;
+    }
+
+    swfobject.addDomLoadEvent(delayedHandle);
+</script>
+</body>
+</html>
